@@ -316,6 +316,10 @@ int main(int argc, char *argv[]) {
     historyFile_FSI << "Time,Iteration,Aitken,URes,logResidual,orderMagnResidual" << endl;
     historyFile_FSI.close();
   }
+
+  /* HACK TO WRITE OUT INITAL MESH */
+  // ENABLE IF INITIAL MESH IS NEEDED
+ output->SetResult_Files(solver_container, geometry_container, config_container, 99999, nZone);
   
   while (ExtIter < config_container[ZONE_0]->GetnExtIter()) {
     

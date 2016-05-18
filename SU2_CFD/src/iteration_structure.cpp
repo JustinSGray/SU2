@@ -1908,7 +1908,7 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
         
         /*--- Solve the aeroelastic equations for the new node locations of the moving markers(surfaces) ---*/
         
-        solver_container[MESH_0][FLOW_SOL]->Aeroelastic(surface_movement, geometry_container[MESH_0], config_container, ExtIter);
+        solver_container[MESH_0][FLOW_SOL]->Aeroelastic(surface_movement, geometry_container[MESH_0], config_container, ExtIter, IntIter);
         
         /*--- Deform the volume grid around the new boundary locations ---*/
         

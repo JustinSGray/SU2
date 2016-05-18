@@ -3669,6 +3669,8 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
     monitoring_coeff += ",\"CMz_"    + Monitoring_Tag + "\"";
     aeroelastic_coeff += ",\"plunge_" + Monitoring_Tag + "\"";
     aeroelastic_coeff += ",\"pitch_"  + Monitoring_Tag + "\"";
+    aeroelastic_coeff += ",\"plungeDot_" + Monitoring_Tag + "\"";
+    aeroelastic_coeff += ",\"pitchDot_"  + Monitoring_Tag + "\"";
   }
   
   /*--- Header for the residuals ---*/
@@ -3910,6 +3912,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     /*--- Coefficients Monitored arrays ---*/
     su2double *aeroelastic_plunge = NULL,
     *aeroelastic_pitch  = NULL,
+	*aeroelastic_plungeDot = NULL,
+	*aeroelastic_pitchDot  = NULL,
     *Surface_CLift      = NULL,
     *Surface_CDrag      = NULL,
     *Surface_CSideForce = NULL,
@@ -3968,6 +3972,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     /*--- Allocate memory for the coefficients being monitored ---*/
     aeroelastic_plunge = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     aeroelastic_pitch  = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    aeroelastic_plungeDot = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    aeroelastic_pitchDot  = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CLift      = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CDrag      = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CSideForce = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
@@ -4071,6 +4077,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
             aeroelastic_plunge[iMarker_Monitoring] = config[val_iZone]->GetAeroelastic_plunge(iMarker_Monitoring);
             aeroelastic_pitch[iMarker_Monitoring]  = config[val_iZone]->GetAeroelastic_pitch(iMarker_Monitoring);
+            aeroelastic_plungeDot[iMarker_Monitoring] = config[val_iZone]->GetAeroelastic_plungeDot(iMarker_Monitoring);
+            aeroelastic_pitchDot[iMarker_Monitoring]  = config[val_iZone]->GetAeroelastic_pitchDot(iMarker_Monitoring);
           }
         }
         
@@ -4337,6 +4345,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                   strcat(aeroelastic_coeff, surface_coeff);
                 }
                 SPRINTF(surface_coeff, ", %12.10f", aeroelastic_pitch[iMarker_Monitoring]);
+                strcat(aeroelastic_coeff, surface_coeff);
+                SPRINTF(surface_coeff, ", %12.10f", aeroelastic_plungeDot[iMarker_Monitoring]);
+                strcat(aeroelastic_coeff, surface_coeff);
+                SPRINTF(surface_coeff, ", %12.10f", aeroelastic_pitchDot[iMarker_Monitoring]);
                 strcat(aeroelastic_coeff, surface_coeff);
               }
             }
@@ -4685,7 +4697,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               if (incompressible) cout << "   Res[Press]" << "     Res[Velx]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
               else if (freesurface) cout << "   Res[Press]" << "     Res[Dist]" << "   CLift(Total)" << "     CLevelSet" << endl;
               else if (rotating_frame && nDim == 3) cout << "     Res[Rho]" << "     Res[RhoE]" << " CThrust(Total)" << " CTorque(Total)" << endl;
-              else if (aeroelastic) cout << "     Res[Rho]" << "     Res[RhoE]" << "   CLift(Total)" << "   CDrag(Total)" << "         plunge" << "          pitch" << endl;
+              else if (aeroelastic) cout << "     Res[Rho]" << "     Res[RhoE]" << "   CLift(Total)" << "   CDrag(Total)" << "         plunge" << "          pitch" << "      plungeDot" << "       pitchDot" << endl;
               else if (equiv_area) cout << "     Res[Rho]" << "   CLift(Total)" << "   CDrag(Total)" << "    CPress(N-F)" << endl;
               else if (turbo)
             	  switch (config[ZONE_0]->GetKind_TurboPerf(0)) {
@@ -4746,7 +4758,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             
             if (transition) { cout << "      Res[Int]" << "       Res[Re]"; }
             else if (rotating_frame && nDim == 3 ) cout << "   CThrust(Total)" << "   CTorque(Total)" << endl;
-            else if (aeroelastic) cout << "   CLift(Total)" << "   CDrag(Total)" << "         plunge" << "          pitch" << endl;
+            else if (aeroelastic) cout << "   CLift(Total)" << "   CDrag(Total)" << "         plunge" << "          pitch" << "      plungeDot" << "       pitchDot" << endl;
             else if (equiv_area) cout << "   CLift(Total)" << "   CDrag(Total)" << "    CPress(N-F)" << endl;
             else if (turbo)
             	switch (config[ZONE_0]->GetKind_TurboPerf(0)) {
@@ -4961,6 +4973,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout.setf(ios::scientific, ios::floatfield);
             cout.width(15); cout << aeroelastic_plunge[0]; //Only output the first marker being monitored to the console.
             cout.width(15); cout << aeroelastic_pitch[0];
+            cout.width(15); cout << aeroelastic_plungeDot[0];
+            cout.width(15); cout << aeroelastic_pitchDot[0];
             cout.unsetf(ios_base::floatfield);
           }
           cout << endl;
@@ -5032,6 +5046,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout.setf(ios::scientific, ios::floatfield);
             cout.width(15); cout << aeroelastic_plunge[0]; //Only output the first marker being monitored to the console.
             cout.width(15); cout << aeroelastic_pitch[0];
+            cout.width(15); cout << aeroelastic_plungeDot[0];
+            cout.width(15); cout << aeroelastic_pitchDot[0];
             cout.unsetf(ios_base::floatfield);
           }
           cout << endl;
@@ -5260,6 +5276,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       delete [] Surface_CMz;
       delete [] aeroelastic_pitch;
       delete [] aeroelastic_plunge;
+      delete [] aeroelastic_pitchDot;
+      delete [] aeroelastic_plungeDot;
 
       delete [] TotalStaticEfficiency;
       delete [] TotalTotalEfficiency;

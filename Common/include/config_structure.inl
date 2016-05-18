@@ -1031,9 +1031,17 @@ inline su2double CConfig::GetAeroelastic_plunge(unsigned short val_marker) {retu
 
 inline su2double CConfig::GetAeroelastic_pitch(unsigned short val_marker) {return Aeroelastic_pitch[val_marker]; }
 
+inline su2double CConfig::GetAeroelastic_plungeDot(unsigned short val_marker) {return Aeroelastic_plungeDot[val_marker]; }
+
+inline su2double CConfig::GetAeroelastic_pitchDot(unsigned short val_marker) {return Aeroelastic_pitchDot[val_marker]; }
+
 inline void CConfig::SetAeroelastic_plunge(unsigned short val_marker, su2double val) {Aeroelastic_plunge[val_marker] = val; }
 
 inline void CConfig::SetAeroelastic_pitch(unsigned short val_marker, su2double val) {Aeroelastic_pitch[val_marker] = val; }
+
+inline void CConfig::SetAeroelastic_plungeDot(unsigned short val_marker, su2double val) {Aeroelastic_plungeDot[val_marker] = val; }
+
+inline void CConfig::SetAeroelastic_pitchDot(unsigned short val_marker, su2double val) {Aeroelastic_pitchDot[val_marker] = val; }
 
 inline void CConfig::SetAeroelastic_n1(void) {
         Aeroelastic_n1 = Aeroelastic_n;

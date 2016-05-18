@@ -1304,10 +1304,13 @@ void CSolver::Gauss_Elimination(su2double** A, su2double* rhs, unsigned short nV
   
 }
 
-void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometry, CConfig *config, unsigned long ExtIter) {
+void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometry, CConfig *config, unsigned long ExtIter, unsigned long IntIter) {
   
   /*--- Variables used for Aeroelastic case ---*/
-  
+	int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
   su2double Cl, Cd, Cn, Ct, Cm, Cn_rot;
   su2double Alpha = config->GetAoA()*PI_NUMBER/180.0;
   vector<su2double> structural_solution(4,0.0); //contains solution(displacements and rates) of typical section wing model.
@@ -1366,10 +1369,28 @@ void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometr
             Cn_rot = Cn*cos(psi) - Ct*sin(psi); //Note the signs are different for accounting for the AOA.
             Cn = Cn_rot;
           }
-          
+
+			if (rank == MASTER_NODE)
+			{
+				ofstream clDump;
+				clDump.open("clAE.dat", ios::app);
+				clDump << Cl << endl;
+				clDump.close();
+
+				ofstream cmDump;
+				cmDump.open("cmAE.dat", ios::app);
+				cmDump << Cm << endl;
+				cmDump.close();
+
+				ofstream cnDump;
+				cnDump.open("cnAE.dat", ios::app);
+				cnDump << Cn << endl;
+				cnDump.close();
+			}
+
           /*--- Solve the aeroelastic equations for the particular marker(surface) ---*/
           
-          SolveTypicalSectionWingModel(geometry, Cn, Cm, config, iMarker_Monitoring, structural_solution);
+          SolveTypicalSectionWingModel(geometry, Cn, Cm, config, iMarker_Monitoring, structural_solution, ExtIter, IntIter);
           
           break;
         }
@@ -1385,7 +1406,10 @@ void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometr
 }
 
 void CSolver::SetUpTypicalSectionWingModel(vector<vector<su2double> >& Phi, vector<su2double>& omega, CConfig *config) {
-  
+	int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
   /*--- Retrieve values from the config file ---*/
   su2double w_h = config->GetAeroelastic_Frequency_Plunge();
   su2double w_a = config->GetAeroelastic_Frequency_Pitch();
@@ -1422,6 +1446,7 @@ void CSolver::SetUpTypicalSectionWingModel(vector<vector<su2double> >& Phi, vect
   Omega2[1][0] = 0;
   Omega2[1][1] = (r_a * (r_a + r_a*pow(w,2) + aux)) / (2*(pow(r_a, 2) - pow(x_a, 2)));
   
+
   /* Nondimesionalize the Eigenvectors such that Phi'*M*Phi = I and PHI'*K*PHI = Omega */
   // Phi'*M*Phi = D
   // D^(-1/2)*Phi'*M*Phi*D^(-1/2) = D^(-1/2)*D^(1/2)*D^(1/2)*D^(-1/2) = I,  D^(-1/2) = inv(sqrt(D))
@@ -1448,7 +1473,13 @@ void CSolver::SetUpTypicalSectionWingModel(vector<vector<su2double> >& Phi, vect
       }
     }
   }
-  
+
+  //cout << "Phi[0][0]: " <<  Phi[0][0] << endl;
+  //cout << "Phi[0][1]: " <<  Phi[0][1] << endl;
+  //cout << "Phi[1][0]: " <<  Phi[1][0] << endl;
+  //cout << "Phi[1][1]: " <<  Phi[1][1] << endl;
+
+
   //Modify the first column
   Phi[0][0] = Phi[0][0] * 1/sqrt(D[0][0]);
   Phi[1][0] = Phi[1][0] * 1/sqrt(D[0][0]);
@@ -1459,11 +1490,32 @@ void CSolver::SetUpTypicalSectionWingModel(vector<vector<su2double> >& Phi, vect
   // Sqrt of the eigenvalues (frequency of vibration of the modes)
   omega[0] = sqrt(Omega2[0][0]);
   omega[1] = sqrt(Omega2[1][1]);
+
+
+
+  if (rank == MASTER_NODE)
+  {
+	  cout << "Omega2[0][0]: " <<  Omega2[0][0] << endl;
+	  cout << "Omega2[1][1]: " <<  Omega2[1][1] << endl;
+
+	  cout << "Phi[0][0]: " <<  Phi[0][0] << endl;
+	  cout << "Phi[0][1]: " <<  Phi[0][1] << endl;
+	  cout << "Phi[1][0]: " <<  Phi[1][0] << endl;
+	  cout << "Phi[1][1]: " <<  Phi[1][1] << endl;
+
+	  cout << "omega[0]: " <<  omega[0] << endl;
+	  cout << "omega[1]: " <<  omega[1] << endl;
+  }
   
 }
 
-void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su2double Cm, CConfig *config, unsigned short iMarker, vector<su2double>& displacements) {
-  
+void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su2double Cm, CConfig *config, unsigned short iMarker, vector<su2double>& displacements, unsigned long ExtIter, unsigned long IntIter) {
+
+	int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
   /*--- The aeroelastic model solved in this routine is the typical section wing model
    The details of the implementation are similar to those found in J.J. Alonso 
    "Fully-Implicit Time-Marching Aeroelastic Solutions" 1994. ---*/
@@ -1475,6 +1527,8 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su
   su2double dt      = config->GetDelta_UnstTimeND();
   dt = dt*w_alpha; //Non-dimensionalize the structural time.
   
+  //cout << "dt:" << dt << endl; //Prints out always the same timestep
+
   /*--- Structural Equation damping ---*/
   vector<su2double> xi(2,0.0);
   
@@ -1491,7 +1545,15 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su
   /*--- Values from previous movement of spring at true time step n+1
    We use this values because we are solving for delta changes not absolute changes ---*/
   vector<vector<su2double> > x_np1_old = config->GetAeroelastic_np1(iMarker);
-  
+
+  /* Print previous
+  if (rank == MASTER_NODE)
+  {
+    cout << "x_np1_old[0][0]: " << x_np1_old[0][0] << " x_np1_old[0][1]: "  << x_np1_old[0][1] << endl;
+    cout << "x_np1_old[1][0]: " << x_np1_old[1][0] << " x_np1_old[1][1]: "  << x_np1_old[1][1] << endl;
+  }
+  */
+
   /*--- Values at previous timesteps. ---*/
   vector<vector<su2double> > x_n = config->GetAeroelastic_n(iMarker);
   vector<vector<su2double> > x_n1 = config->GetAeroelastic_n1(iMarker);
@@ -1542,6 +1604,7 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su
     
     eta[i] = x_np1[0][i]-x_np1_old[0][i];  // For displacements, the change(deltas) is used.
     eta_dot[i] = x_np1[1][i]; // For velocities, absolute values are used.
+    //cout << "eta[i]: " << eta[i] << endl;
   }
   
   /*--- Transform back from the generalized coordinates to get the actual displacements in plunge and pitch  q = Phi*eta ---*/
@@ -1556,25 +1619,80 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su
     }
   }
   
-  su2double dh = b*q[0];
+  su2double dh = b*q[0];  // Scale to dimensional variables
   su2double dalpha = q[1];
   
   su2double h_dot = w_alpha*b*q_dot[0];  //The w_a brings it back to actual time.
   su2double alpha_dot = w_alpha*q_dot[1];
   
+
   /*--- Set the solution of the structural equations ---*/
-  displacements[0] = dh;
+  displacements[0] = dh;  // This is dimensional
   displacements[1] = dalpha;
   displacements[2] = h_dot;
   displacements[3] = alpha_dot;
-  
+
+
   /*--- Calculate the total plunge and total pitch displacements for the unsteady step by summing the displacement at each sudo time step ---*/
-  su2double pitch, plunge;
+  su2double pitch, plunge, pitchDot, plungeDot;
   pitch = config->GetAeroelastic_pitch(iMarker);
   plunge = config->GetAeroelastic_plunge(iMarker);
+  pitchDot = config->GetAeroelastic_pitchDot(iMarker);
+  plungeDot = config->GetAeroelastic_plungeDot(iMarker);
+
+  if (rank == MASTER_NODE)
+  {
+	  cout << "Current pitch: " << pitch << " adding dalpha to current: " << dalpha << " New value: " <<  pitch+dalpha << endl;
+	  cout << "Current plunge: " << plunge << " adding dh/b to current: " << dh << " New value: " << plunge + dh << endl;
+	  cout << "Current pitchDot: " << pitchDot << " setting alpha_dot as current: " << alpha_dot <<  endl;
+	  cout << "Current plungeDot: " << plungeDot << " setting h_dot as current: " << h_dot << endl;
+  }
+
+	// DUMP THE VALUES FROM THE STRUCTURAL SOLUTION. EVERYTHING IS IN DIMENSIONAL VARIABLES
+  ///*
+	if (rank == MASTER_NODE)
+	{
+		ofstream plungeDump;
+		plungeDump.open("plungeAE.dat", ios::app);
+		plungeDump << plunge + dh << endl;
+		plungeDump.close();
+
+		ofstream plungedhDump;
+		plungedhDump.open("plungedhAE.dat", ios::app);
+		plungedhDump << dh << endl;
+		plungedhDump.close();
+
+		ofstream pitchDump;
+		pitchDump.open("pitchAE.dat", ios::app);
+		pitchDump << pitch+dalpha << endl;
+		pitchDump.close();
+
+		ofstream pitchdalphaDump;
+		pitchdalphaDump.open("pitchdalphaAE.dat", ios::app);
+		pitchdalphaDump << dalpha << endl;
+		pitchdalphaDump.close();
+
+		ofstream plungeDotDump;
+		plungeDotDump.open("plungeDotAE.dat", ios::app);
+		plungeDotDump << h_dot << endl;
+		plungeDotDump.close();
+
+		ofstream pitchDotDump;
+		pitchDotDump.open("pitchDotAE.dat", ios::app);
+		pitchDotDump << alpha_dot << endl;
+		pitchDotDump.close();
+	}
+	//*/
+	// DUMP THE VALUES FROM THE STRUCTURAL SOLUTION ENDS
+
+  
   
   config->SetAeroelastic_pitch(iMarker , pitch+dalpha);
-  config->SetAeroelastic_plunge(iMarker , plunge+dh/b);
+  //config->SetAeroelastic_plunge(iMarker , plunge+dh/b);
+  config->SetAeroelastic_plunge(iMarker , plunge+dh); // Write dimensional plunge so we dont need to scale it later on
+  config->SetAeroelastic_pitchDot(iMarker , alpha_dot); // For velocities absolute values are used
+  config->SetAeroelastic_plungeDot(iMarker , h_dot);
+
   
   /*--- Set the Aeroelastic solution at time n+1. This gets update every sudo time step
    and after convering the sudo time step the solution at n+1 get moved to the solution at n

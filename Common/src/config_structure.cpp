@@ -147,6 +147,7 @@ void CConfig::SetPointersNull(void) {
   /*--- Miscellaneous/unsorted ---*/
 
   Aeroelastic_plunge = NULL;    Aeroelastic_pitch = NULL;
+  Aeroelastic_plungeDot = NULL;    Aeroelastic_pitchDot = NULL;
   MassFrac_FreeStream = NULL;
   Velocity_FreeStream = NULL;
   RefOriginMoment = NULL;     RefOriginMoment_X=NULL;  RefOriginMoment_Y=NULL;
@@ -2159,9 +2160,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (Grid_Movement && Aeroelastic_Simulation) {
     Aeroelastic_pitch = new su2double[nMarker_Monitoring];
     Aeroelastic_plunge = new su2double[nMarker_Monitoring];
+    Aeroelastic_pitchDot = new su2double[nMarker_Monitoring];
+    Aeroelastic_plungeDot = new su2double[nMarker_Monitoring];
     for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ ) {
       Aeroelastic_pitch[iMarker] = 0.0;
       Aeroelastic_plunge[iMarker] = 0.0;
+      Aeroelastic_pitchDot[iMarker] = 0.0;
+      Aeroelastic_plungeDot[iMarker] = 0.0;
     }
   }
 
@@ -4317,6 +4322,8 @@ CConfig::~CConfig(void) {
 
     delete[] Aeroelastic_pitch;
     delete[] Aeroelastic_plunge;
+    delete[] Aeroelastic_pitchDot;
+    delete[] Aeroelastic_plungeDot;
   }
 
   /*--- Free memory for unspecified grid motion parameters ---*/

@@ -654,6 +654,8 @@ private:
   RadiusGyrationSquared; /*!< \brief The radius of gyration squared for Aeroelastic. */
   su2double *Aeroelastic_plunge, /*!< \brief Value of plunging coordinate at the end of an external iteration. */
 	*Aeroelastic_pitch; /*!< \brief Value of pitching coordinate at the end of an external iteration. */
+  su2double *Aeroelastic_plungeDot, /*!< \brief Value of plunging velocity at the end of an external iteration. */
+  	*Aeroelastic_pitchDot; /*!< \brief Value of pitching velocity at the end of an external iteration. */
   unsigned short AeroelasticIter; /*!< \brief Solve the aeroelastic equations every given number of internal iterations. */
   unsigned short Gust_Type,	/*!< \brief Type of Gust. */
   Gust_Dir;   /*!< \brief Direction of the gust */
@@ -4990,6 +4992,20 @@ public:
 	/*!
 	 * \brief Value of plunging coordinate.
      * \param[in] val_marker - the marker we are monitoring.
+	 * \return Value of plunging coordinate.
+	 */
+	su2double GetAeroelastic_plungeDot(unsigned short val_marker);
+
+    /*!
+	 * \brief Value of pitching coordinate.
+     * \param[in] val_marker - the marker we are monitoring.
+	 * \return Value of pitching coordinate.
+	 */
+	su2double GetAeroelastic_pitchDot(unsigned short val_marker);
+
+	/*!
+	 * \brief Value of plunging coordinate.
+     * \param[in] val_marker - the marker we are monitoring.
      * \param[in] val - value of plunging coordinate.
 	 */
 	void SetAeroelastic_plunge(unsigned short val_marker, su2double val);
@@ -5000,6 +5016,20 @@ public:
      * \param[in] val - value of pitching coordinate.
 	 */
 	void SetAeroelastic_pitch(unsigned short val_marker, su2double val);
+
+	/*!
+	 * \brief Value of plunging coordinate.
+     * \param[in] val_marker - the marker we are monitoring.
+     * \param[in] val - value of plunging coordinate.
+	 */
+	void SetAeroelastic_plungeDot(unsigned short val_marker, su2double val);
+
+	/*!
+	 * \brief Value of pitching coordinate.
+     * \param[in] val_marker - the marker we are monitoring.
+     * \param[in] val - value of pitching coordinate.
+	 */
+	void SetAeroelastic_pitchDot(unsigned short val_marker, su2double val);
 
     /*!
 	 * \brief Get information about the aeroelastic simulation.

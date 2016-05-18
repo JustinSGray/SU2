@@ -2225,17 +2225,77 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
     }
   }
   
+	/* HACK BEGINS */
+	/* READ IN DATA AND READ THE CORRECT TIMESTEP */
+	///*
+    string line;
+    string lineDot;
+	double forcedPitchNew = 0.0;
+	double forcedPitchOld = 0.0;
+	double forcedPitchDotNew = 0.0;
+	double forcedPitchDotOld = 0.0;
+	ifstream fd_pitch;
+	ifstream fd_pitchDot;
+
+	fd_pitch.open("../ae_solution/pitch.dat");
+	fd_pitchDot.open("../ae_solution/pitchDot.dat");
+
+	if (fd_pitch.is_open() && fd_pitchDot.is_open())
+	{
+		int i = 0;
+		while ( getline(fd_pitch, line) && getline(fd_pitchDot, lineDot) )
+		{
+
+			if (i == iter-1)
+			{
+				std::istringstream iss(line);
+				std::istringstream issDot(lineDot);
+				iss >> forcedPitchOld;
+				issDot >> forcedPitchDotOld;
+				// Now we have the line we want as a double
+				cout << "Pitch Line nr " << i << " content: "<<  forcedPitchOld << endl;
+				cout << "PitchDot Line nr " << i << " content: "<<  forcedPitchDotOld << endl;
+			}
+
+			if (i == iter)
+			{
+				std::istringstream iss(line);
+				std::istringstream issDot(lineDot);
+				iss >> forcedPitchNew;
+				issDot >> forcedPitchDotNew;
+				// Now we have the line we want as a double
+				cout << "Pitch Line nr " << i << " content: "<<  forcedPitchNew << endl;
+				cout << "PitchDot Line nr " << i << " content: "<<  forcedPitchDotNew << endl;
+			}
+			i++;
+		}
+		fd_pitch.close();
+		fd_pitchDot.close();
+	}
+	else cout << "Unable to open file" << endl;
+
+	dtheta = 0.0;
+	dphi = 0.0;
+	dpsi = -(forcedPitchNew-forcedPitchOld);
+
+
+	alphaDot[0] = 0.0;
+	alphaDot[1] = 0.0;
+	alphaDot[2] = -(forcedPitchDotNew-forcedPitchDotOld);
+
+	/* HACK ENDS */
+
 	/*--- Compute delta change in the angle about the x, y, & z axes. ---*/
   
-	dtheta = -Ampl[0]*(sin(Omega[0]*time_new + Phase[0]) - sin(Omega[0]*time_old + Phase[0]));
-	dphi   = -Ampl[1]*(sin(Omega[1]*time_new + Phase[1]) - sin(Omega[1]*time_old + Phase[1]));
-	dpsi   = -Ampl[2]*(sin(Omega[2]*time_new + Phase[2]) - sin(Omega[2]*time_old + Phase[2]));
+	//dtheta = -Ampl[0]*(sin(Omega[0]*time_new + Phase[0]) - sin(Omega[0]*time_old + Phase[0]));
+	//dphi   = -Ampl[1]*(sin(Omega[1]*time_new + Phase[1]) - sin(Omega[1]*time_old + Phase[1]));
+	//dpsi   = -Ampl[2]*(sin(Omega[2]*time_new + Phase[2]) - sin(Omega[2]*time_old + Phase[2]));
   
   /*--- Angular velocity at the new time ---*/
   
-  alphaDot[0] = -Omega[0]*Ampl[0]*cos(Omega[0]*time_new);
-  alphaDot[1] = -Omega[1]*Ampl[1]*cos(Omega[1]*time_new);
-  alphaDot[2] = -Omega[2]*Ampl[2]*cos(Omega[2]*time_new);
+  //alphaDot[0] = -Omega[0]*Ampl[0]*cos(Omega[0]*time_new);
+  //alphaDot[1] = -Omega[1]*Ampl[1]*cos(Omega[1]*time_new);
+  //alphaDot[2] = -Omega[2]*Ampl[2]*cos(Omega[2]*time_new);
 
   if (rank == MASTER_NODE && iter == 0) {
       cout << " Pitching frequency: (" << Omega[0] << ", " << Omega[1];
@@ -2246,6 +2306,11 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
       cout << " Pitching phase lag: (" << Phase[0]/DEG2RAD << ", ";
       cout << Phase[1]/DEG2RAD <<", "<< Phase[2]/DEG2RAD;
       cout << ") degrees."<< endl;
+  }
+
+  if (rank == MASTER_NODE) {
+      cout << " Pitching velocity: (" << alphaDot[0] << ", " << alphaDot[1] << ", " << alphaDot[2] << ") rad/s." << endl;
+      cout << "config->GetOmega_Ref():" << config->GetOmega_Ref() << endl;
   }
   
 	/*--- Store angles separately for clarity. Compute sines/cosines. ---*/
@@ -2381,16 +2446,92 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
     }
   }
   
+
+
+	/* HACK BEGINS */
+	/* READ IN DATA AND READ THE CORRECT TIMESTEP */
+    ///*
+	string line;
+	string lineDot;
+	double forcedPlungeNew = 0.0;
+	double forcedPlungeOld = 0.0;
+	double forcedPlungeDotNew = 0.0;
+	double forcedPlungeDotOld = 0.0;
+	ifstream fd_plunge;
+	ifstream fd_plungeDot;
+
+	fd_plunge.open("../ae_solution/plunge.dat");
+	fd_plungeDot.open("../ae_solution/plungeDot.dat");
+
+	if (fd_plunge.is_open() && fd_plungeDot.is_open())
+	{
+		int i = 0;
+		while ( getline(fd_plunge, line) && getline(fd_plungeDot, lineDot) )
+		{
+
+			if (i == iter-1)
+			{
+				std::istringstream iss(line);
+				std::istringstream issDot(lineDot);
+				iss >> forcedPlungeOld;
+				issDot >> forcedPlungeDotOld;
+				// Now we have the line we want as a double
+				cout << "Plunge Line nr " << i << " content: "<<  forcedPlungeOld << endl;
+				cout << "PlungeDot Line nr " << i << " content: "<<  forcedPlungeDotOld << endl;
+			}
+
+			if (i == iter)
+			{
+				std::istringstream iss(line);
+				std::istringstream issDot(lineDot);
+				iss >> forcedPlungeNew;
+				issDot >> forcedPlungeDotNew;
+				// Now we have the line we want as a double
+				cout << "Plunge Line nr " << i << " content: "<<  forcedPlungeNew << endl;
+				cout << "PlungeDot Line nr " << i << " content: "<<  forcedPlungeDotNew << endl;
+			}
+			i++;
+		}
+		fd_plunge.close();
+		fd_plungeDot.close();
+	}
+	else cout << "Unable to open file" << endl;
+
+	deltaX[0] = 0.0;
+	deltaX[1] = -(forcedPlungeNew-forcedPlungeOld); // Flipped signs needs probably minus in front
+	deltaX[2] = 0.0;
+
+
+	xDot[0] = 0.0;
+	xDot[1] = -(forcedPlungeDotNew-forcedPlungeDotOld); // Flipped signs needs probably minus in front
+	xDot[2] = 0.0;
+
+
+
+	/* HACK ENDS */
+
 	/*--- Compute delta change in the position in the x, y, & z directions. ---*/
-	deltaX[0] = -Ampl[0]*(sin(Omega[0]*time_new) - sin(Omega[0]*time_old));
-	deltaX[1] = -Ampl[1]*(sin(Omega[1]*time_new) - sin(Omega[1]*time_old));
-	deltaX[2] = -Ampl[2]*(sin(Omega[2]*time_new) - sin(Omega[2]*time_old));
-  
+	//deltaX[0] = -Ampl[0]*(sin(Omega[0]*time_new) - sin(Omega[0]*time_old));
+	//deltaX[1] = -Ampl[1]*(sin(Omega[1]*time_new) - sin(Omega[1]*time_old));
+	//deltaX[2] = -Ampl[2]*(sin(Omega[2]*time_new) - sin(Omega[2]*time_old));
+
   /*--- Compute grid velocity due to plunge in the x, y, & z directions. ---*/
-	xDot[0] = -Ampl[0]*Omega[0]*(cos(Omega[0]*time_new));
-	xDot[1] = -Ampl[1]*Omega[1]*(cos(Omega[1]*time_new));
-	xDot[2] = -Ampl[2]*Omega[2]*(cos(Omega[2]*time_new));
-  
+	//xDot[0] = -Ampl[0]*Omega[0]*(cos(Omega[0]*time_new));
+	//xDot[1] = -Ampl[1]*Omega[1]*(cos(Omega[1]*time_new));
+	//xDot[2] = -Ampl[2]*Omega[2]*(cos(Omega[2]*time_new));
+
+  	if (rank == MASTER_NODE)
+  	{
+  		cout << "-Ampl[1]:" << -Ampl[1] << endl;
+  		cout << "time_new:" << time_new << endl;
+  		cout << "time_old:" << time_old << endl;
+  		cout << "sin(Omega[1]*time_new):" << sin(Omega[1]*time_new) << endl;
+  		cout << "sin(Omega[1]*time_old):" << sin(Omega[1]*time_old) << endl;
+  		cout << "deltaX[1]:" << deltaX[1] << endl;
+  		cout << " Plunging displacement: (" << deltaX[0] << ", " << deltaX[1] << ", " << deltaX[2] << ") m." << endl;
+  		cout << " Plunging velocity: (" << xDot[0] << ", " << xDot[1] << ", " << xDot[2] << ") m/s." << endl;
+  	}
+
   if (rank == MASTER_NODE && iter == 0) {
     cout << " Plunging frequency: (" << Omega[0] << ", " << Omega[1];
     cout << ", " << Omega[2] << ") rad/s." << endl;
@@ -5342,6 +5483,8 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
 void CSurfaceMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned long ExtIter, unsigned short iMarker, unsigned short iMarker_Monitoring, vector<su2double>& displacements) {
   
   /* The sign conventions of these are those of the Typical Section Wing Model, below the signs are corrected */
+  //su2double dh = 0;           // relative plunge
+  //su2double dalpha = 0;       // relative pitch
   su2double dh = -displacements[0];           // relative plunge
   su2double dalpha = -displacements[1];       // relative pitch
   su2double dh_x, dh_y;
@@ -5354,13 +5497,66 @@ void CSurfaceMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config, u
   su2double VarCoord[3];
   string Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
   
+
+  /* HACK BEGINS */
+  /*
+	string plungeline;
+	string pitchline;
+	double forcedPlungeNew = 0.0;
+	double forcedPlungeOld = 0.0;
+	double forcedPitchNew = 0.0;
+	double forcedPitchOld = 0.0;
+	ifstream fd_plunge;
+	ifstream fd_pitch;
+
+	fd_plunge.open("/home/eirikurj/Data/Dropbox/skoli/umich/mdolab/projects/time-accurate/naca64A010/su2/unsteady/11/plunge.dat");
+	fd_pitch.open("/home/eirikurj/Data/Dropbox/skoli/umich/mdolab/projects/time-accurate/naca64A010/su2/unsteady/11/pitch.dat");
+
+	if (fd_plunge.is_open() && fd_pitch.is_open())
+	{
+		int i = 0;
+		while ( getline(fd_plunge, plungeline) && getline(fd_pitch, pitchline) )
+		{
+
+			if (i == ExtIter-1)
+			{
+				std::istringstream issplunge(plungeline);
+				std::istringstream isspitch(pitchline);
+				issplunge >> forcedPlungeOld;
+				isspitch >> forcedPitchOld;
+				// Now we have the line we want as a double
+				cout << "Plunge Line nr " << i << " content: "<<  forcedPlungeOld << endl;
+				cout << "Pitch Line nr " << i << " content: "<<  forcedPitchOld << endl;
+			}
+
+			if (i == ExtIter)
+			{
+				std::istringstream issplunge(plungeline);
+				std::istringstream isspitch(pitchline);
+				issplunge >> forcedPlungeNew;
+				isspitch >> forcedPitchNew;
+				// Now we have the line we want as a double
+				cout << "Plunge Line nr " << i << " content: "<<  forcedPlungeNew << endl;
+				cout << "Pitch Line nr " << i << " content: "<<  forcedPitchNew << endl;
+			}
+			i++;
+		}
+		fd_plunge.close();
+		fd_pitch.close();
+	}
+	else cout << "Unable to open files" << endl;
+
+	dh = (forcedPlungeNew-forcedPlungeOld);
+	dalpha = (forcedPitchNew-forcedPitchOld);
+	*/
+
   /*--- Calculate the plunge displacement for the Typical Section Wing Model taking into account rotation ---*/
   if (config->GetKind_GridMovement(ZONE_0) == AEROELASTIC_RIGID_MOTION) {
     su2double Omega, dt, psi;
     dt = config->GetDelta_UnstTimeND();
     Omega  = (config->GetRotation_Rate_Z(ZONE_0)/config->GetOmega_Ref());
     psi = Omega*(dt*ExtIter);
-    
+
     /*--- Correct for the airfoil starting position (This is hardcoded in here) ---*/
     if (Monitoring_Tag == "Airfoil1") {
       psi = psi + 0.0;
@@ -5373,19 +5569,26 @@ void CSurfaceMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config, u
     }
     else
       cout << "WARNING: There is a marker that we are monitoring that doesn't match the values hardcoded above!" << endl;
-    
+
     dh_x = -dh*sin(psi);
     dh_y = dh*cos(psi);
-    
+
   } else {
     dh_x = 0;
     dh_y = dh;
   }
-  
+
+
+  //cout << "Lref:" << Lref << endl;
+  //cout << "dh:" << dh << endl;
+  //cout << "dalpha:" << dalpha << endl;
+
   /*--- Pitching origin from config. ---*/
   
   Center[0] = config->GetRefOriginMoment_X(iMarker_Monitoring);
   Center[1] = config->GetRefOriginMoment_Y(iMarker_Monitoring);
+  //cout << "Center[0]:" << Center[0] << endl;
+  //cout << "Center[1]:" << Center[1] << endl;
   
   for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
     iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -5394,12 +5597,18 @@ void CSurfaceMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config, u
     
     /*--- Calculate non-dim. position from rotation center ---*/
     su2double r[2] = {0,0};
-    for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
+    for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
         r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
+    	//cout << "r[" << iDim << "]" << r[iDim] << endl;
+    }
+
     
     /*--- Compute delta of transformed point coordinates ---*/
     // The deltas are needed for the FEA grid deformation Method.
     // rotation contribution - previous position + plunging contribution
+    //cout << "cos(dalpha):" << cos(dalpha) << endl;
+    //cout << "sin(dalpha):" << sin(dalpha) << endl;
+
     x_new = cos(dalpha)*r[0] - sin(dalpha)*r[1] -r[0] + dh_x;
     y_new = sin(dalpha)*r[0] + cos(dalpha)*r[1] -r[1] + dh_y;
     
@@ -5411,6 +5620,8 @@ void CSurfaceMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config, u
     geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
   }
   /*--- Set the elastic axis to the new location after incrementing the position with the plunge ---*/
+  //cout << "Center[0]+dh_x:" << Center[0]+dh_x << endl;
+  //cout << "Center[1]+dh_y:" << Center[1]+dh_y << endl;
   config->SetRefOriginMoment_X(iMarker_Monitoring, Center[0]+dh_x);
   config->SetRefOriginMoment_Y(iMarker_Monitoring, Center[1]+dh_y);
 

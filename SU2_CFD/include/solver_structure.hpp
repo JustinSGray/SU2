@@ -2480,7 +2480,7 @@ public:
   * \param[in] config - Definition of the particular problem.
   * \param[in] ExtIter - Physical iteration number.
   */
-	void Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometry, CConfig *config, unsigned long ExtIter);
+	void Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometry, CConfig *config, unsigned long ExtIter, unsigned long IntIter);
     
   /*!
   * \brief Sets up the generalized eigenvectors and eigenvalues needed to solve the aeroelastic equations.
@@ -2500,7 +2500,7 @@ public:
   * \param[in] displacements - solution of typical section wing model.
 	*/
   
-  void SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su2double Cm, CConfig *config, unsigned short val_Marker, vector<su2double>& displacements);
+  void SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su2double Cm, CConfig *config, unsigned short val_Marker, vector<su2double>& displacements, unsigned long ExtIter, unsigned long IntIter);
 
   /*!
    * \brief A virtual member.
